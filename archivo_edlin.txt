@@ -1,0 +1,16 @@
+Bienvenidos al editor de texto Edlin
+Use el menú para realizar acciones
+------
+[L] Define la línea activa
+[E] Edita la línea activa
+Perro
+[B] Borra el contenido de la línea activa
+[D] Deshace la última acción
+[R] Rehace la última acción deshecha
+[C] Copia el contenido de la línea activa
+[P] Pega el contenido copiado
+[G] Guarda el archivo
+[A] Abre un archivo
+[S] Sale del programa
+
+
