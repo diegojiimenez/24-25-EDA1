@@ -2,47 +2,47 @@ import java.util.Scanner;
 
 class Edlin {
     public static void main(String[] args) {
-        int activeLine[] = { 1 };
-        String document[] = {
-                "Bienvenidos al editor EDLIN",
-                "Utilice el menu inferior para editar el texto",
+        int[] currentLine = { 1 };
+        String[] content = {
+                "Bienvenidos al editor de texto Edlin",
+                "Use el menú para realizar acciones",
                 "------",
-                "[L] permite definir la linea activa",
-                "[E] permite editar la linea activa",
-                "[I] permite intercambiar dos lineas",
-                "[B] borra el contenido de la linea activa",
-                "[D] deshace la última acción de la activa",
-                "[R] rehacer la última acción deshecha",
-                "[C] copia el contenido de la linea activa",
-                "[P] pega el contenido de la linea activa",
-                "[S] sale del programa",
+                "[L] Define la línea activa",
+                "[E] Edita la línea activa",
+                "[I] Intercambia dos líneas",
+                "[B] Borra el contenido de la línea activa",
+                "[D] Deshace la última acción",
+                "[R] Rehace la última acción deshecha",
+                "[C] Copia el contenido de la línea activa",
+                "[P] Pega el contenido copiado",
+                "[S] Sale del programa",
                 "",
                 ""
         };
 
-        String lastContent[] = { "" };
-        String redoContent[] = { "" };
-        String clipboard[] = { "" };
+        String[] previousContent = { "" };
+        String[] redoStack = { "" };
+        String[] clipboard = { "" };
 
         do {
-            print(document, activeLine);
-        } while (processActions(document, activeLine, lastContent, redoContent, clipboard));
+            displayContent(content, currentLine);
+        } while (executeCommand(content, currentLine, previousContent, redoStack, clipboard));
     }
 
-    static void print(String[] document, int[] activeLine) {
+    static void displayContent(String[] content, int[] currentLine) {
         clearScreen();
-        printHorizontalLine();
-        for (int line = 0; line < document.length; line++) {
-            System.out.println(line + separator(line, activeLine[0]) + document[line]);
+        drawLine();
+        for (int i = 0; i < content.length; i++) {
+            System.out.println(i + showPointer(i, currentLine[0]) + content[i]);
         }
-        printHorizontalLine();
+        drawLine();
     }
 
-    static String separator(int line, int activeLine) {
-        return line == activeLine ? ":*| " : ": | ";
+    static String showPointer(int line, int current) {
+        return line == current ? ":*| " : ": | ";
     }
 
-    static void printHorizontalLine() {
+    static void drawLine() {
         System.out.println("-".repeat(50));
     }
 
@@ -51,149 +51,146 @@ class Edlin {
         System.out.flush();
     }
 
-    static boolean processActions(String[] document, int[] activeLine, String[] lastContent, String[] redoContent,
+    static boolean executeCommand(String[] content, int[] currentLine, String[] previousContent, String[] redoStack,
             String[] clipboard) {
         System.out.println(
-                "Comandos: [L]inea activa | [E]ditar | [I]ntercambiar | [D]eshacer | [R]ehacer | [C]opiar | [P]egar | [B]orrar | [S]alir");
+                "Comandos: [L]ínea activa | [E]ditar | [I]ntercambiar | [D]eshacer | [R]ehacer | [C]opiar | [P]egar | [B]orrar | [S]alir");
 
-        switch (askChar()) {
+        switch (getCommand()) {
             case 'S':
             case 's':
                 return false;
             case 'L':
             case 'l':
-                setActiveLine(document, activeLine);
+                updateActiveLine(content, currentLine);
                 break;
             case 'E':
             case 'e':
-                edit(document, activeLine, lastContent, redoContent);
+                modifyLine(content, currentLine, previousContent, redoStack);
                 break;
             case 'I':
             case 'i':
-                exchangeLines(document);
+                swapLines(content);
                 break;
             case 'B':
             case 'b':
-                delete(document, activeLine, lastContent, redoContent);
+                removeLine(content, currentLine, previousContent, redoStack);
                 break;
             case 'D':
             case 'd':
-                undo(document, activeLine, lastContent, redoContent);
+                undoChange(content, currentLine, previousContent, redoStack);
                 break;
             case 'R':
             case 'r':
-                redo(document, activeLine, lastContent, redoContent);
+                redoChange(content, currentLine, previousContent, redoStack);
                 break;
             case 'C':
             case 'c':
-                copy(document, activeLine, clipboard);
+                saveToClipboard(content, currentLine, clipboard);
                 break;
             case 'P':
             case 'p':
-                paste(document, activeLine, clipboard, lastContent, redoContent);
+                pasteFromClipboard(content, currentLine, clipboard, previousContent, redoStack);
                 break;
         }
         return true;
     }
 
-    static char askChar() {
+    static char getCommand() {
         Scanner input = new Scanner(System.in);
         return input.next().charAt(0);
     }
 
-    static void delete(String[] document, int[] activeLine, String[] lastContent, String[] redoContent) {
-        System.out.println("Esta acción es irreversible: indique el número de línea activa para confirmarlo ["
-                + activeLine[0] + "]");
-        if (askInt() == activeLine[0]) {
-            redoContent[0] = "";
-            lastContent[0] = document[activeLine[0]];
-            document[activeLine[0]] = "";
+    static void removeLine(String[] content, int[] currentLine, String[] previousContent, String[] redoStack) {
+        System.out.println("Confirme eliminando línea activa [" + currentLine[0] + "]: ");
+        if (getInteger() == currentLine[0]) {
+            redoStack[0] = "";
+            previousContent[0] = content[currentLine[0]];
+            content[currentLine[0]] = "";
         }
     }
 
-    static void exchangeLines(String[] document) {
-        int originLine, destinationLine;
-        String temporaryLine;
-        boolean validLine = true;
+    static void swapLines(String[] content) {
+        int firstLine, secondLine;
+        String tempLine;
+        do {
+            System.out.print("Primera línea a intercambiar: ");
+            firstLine = getInteger();
+        } while (!isValidLine(firstLine, content.length));
 
         do {
-            System.out.print("Indique primera línea a intercambiar: ");
-            originLine = askInt();
-            validLine = originLine >= 0 && originLine < document.length;
-        } while (!validLine);
+            System.out.print("Segunda línea a intercambiar: ");
+            secondLine = getInteger();
+        } while (!isValidLine(secondLine, content.length));
 
-        do {
-            System.out.print("Indique segunda línea a intercambiar: ");
-            destinationLine = askInt();
-            validLine = destinationLine >= 0 && destinationLine < document.length;
-        } while (!validLine);
-
-        temporaryLine = document[destinationLine];
-        document[destinationLine] = document[originLine];
-        document[originLine] = temporaryLine;
+        tempLine = content[secondLine];
+        content[secondLine] = content[firstLine];
+        content[firstLine] = tempLine;
     }
 
-    static void edit(String[] document, int[] activeLine, String[] lastContent, String[] redoContent) {
-        System.out.println("EDITANDO> " + document[activeLine[0]]);
-        redoContent[0] = "";
-        lastContent[0] = document[activeLine[0]];
-        document[activeLine[0]] = askString();
+    static void modifyLine(String[] content, int[] currentLine, String[] previousContent, String[] redoStack) {
+        System.out.println("Editando > " + content[currentLine[0]]);
+        redoStack[0] = "";
+        previousContent[0] = content[currentLine[0]];
+        content[currentLine[0]] = getString();
     }
 
-    static String askString() {
+    static boolean isValidLine(int line, int limit) {
+        return line >= 0 && line < limit;
+    }
+
+    static String getString() {
         Scanner input = new Scanner(System.in);
         return input.nextLine();
     }
 
-    static void setActiveLine(String[] document, int[] activeLine) {
-        boolean validLine = true;
+    static void updateActiveLine(String[] content, int[] currentLine) {
         do {
-            System.out.print("Indique la nueva línea activa: ");
-            activeLine[0] = askInt();
-            validLine = activeLine[0] >= 0 && activeLine[0] < document.length;
-        } while (!validLine);
+            System.out.print("Nueva línea activa: ");
+            currentLine[0] = getInteger();
+        } while (!isValidLine(currentLine[0], content.length));
     }
 
-    static int askInt() {
+    static int getInteger() {
         Scanner input = new Scanner(System.in);
         return input.nextInt();
     }
 
-    static void undo(String[] document, int[] activeLine, String[] lastContent, String[] redoContent) {
-        System.out.println("DESHACIENDO> Línea activa: " + activeLine[0]);
-        redoContent[0] = document[activeLine[0]];
-        document[activeLine[0]] = lastContent[0];
-        lastContent[0] = redoContent[0];
-        System.out.println("La acción está deshecha");
+    static void undoChange(String[] content, int[] currentLine, String[] previousContent, String[] redoStack) {
+        System.out.println("Deshaciendo en línea: " + currentLine[0]);
+        redoStack[0] = content[currentLine[0]];
+        content[currentLine[0]] = previousContent[0];
+        previousContent[0] = redoStack[0];
+        System.out.println("Acción deshecha.");
     }
 
-    static void redo(String[] document, int[] activeLine, String[] lastContent, String[] redoContent) {
-        if (redoContent[0].isEmpty()) {
-            System.out.println("No hay acción para rehacer.");
+    static void redoChange(String[] content, int[] currentLine, String[] previousContent, String[] redoStack) {
+        if (redoStack[0].isEmpty()) {
+            System.out.println("No hay acciones para rehacer.");
             return;
         }
-        System.out.println("REHACIENDO> Línea activa: " + activeLine[0]);
-        String temp = document[activeLine[0]];
-        document[activeLine[0]] = redoContent[0];
-        redoContent[0] = lastContent[0];
-        lastContent[0] = temp;
-        System.out.println("La acción ha sido rehecha");
+        System.out.println("Rehaciendo en línea: " + currentLine[0]);
+        String temp = content[currentLine[0]];
+        content[currentLine[0]] = redoStack[0];
+        redoStack[0] = previousContent[0];
+        previousContent[0] = temp;
+        System.out.println("Acción rehecha.");
     }
 
-    static void copy(String[] document, int[] activeLine, String[] clipboard) {
-        clipboard[0] = document[activeLine[0]];
+    static void saveToClipboard(String[] content, int[] currentLine, String[] clipboard) {
+        clipboard[0] = content[currentLine[0]];
         System.out.println("Contenido copiado: " + clipboard[0]);
     }
 
-    static void paste(String[] document, int[] activeLine, String[] clipboard, String[] lastContent,
-            String[] redoContent) {
+    static void pasteFromClipboard(String[] content, int[] currentLine, String[] clipboard, String[] previousContent,
+            String[] redoStack) {
         if (clipboard[0].isEmpty()) {
-            System.out.println("El portapapeles está vacío.");
+            System.out.println("Portapapeles vacío.");
             return;
         }
-        redoContent[0] = "";
-        lastContent[0] = document[activeLine[0]];
-        document[activeLine[0]] = clipboard[0];
+        redoStack[0] = "";
+        previousContent[0] = content[currentLine[0]];
+        content[currentLine[0]] = clipboard[0];
         System.out.println("Contenido pegado: " + clipboard[0]);
     }
 }
