@@ -4,7 +4,7 @@ import java.util.Scanner;
 
 class Edlin {
     public static void main(String[] args) {
-        int[] currentLine = { 1 }; // Línea activa
+        int[] currentLine = { 1 }; 
         String[] content = {
                 "Bienvenidos al editor de texto Edlin",
                 "Use el menú para realizar acciones",
