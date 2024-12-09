@@ -2,7 +2,6 @@
 
 import java.util.Scanner;
 
-// Clase principal Edlin
 class Edlin {
     public static void main(String[] args) {
         int[] currentLine = { 1 }; // Línea activa
@@ -25,14 +24,12 @@ class Edlin {
                 ""
         };
 
-        // Variables auxiliares para Deshacer/Rehacer y Portapapeles
         String[] previousContent = { "" };
         String[] redoContent = { "" };
         String[] clipboard = { "" };
 
         FileManager fileManager = new FileManager();
 
-        // Bucle principal
         do {
             displayContent(content, currentLine);
         } while (executeCommand(content, currentLine, previousContent, redoContent, clipboard, fileManager));
